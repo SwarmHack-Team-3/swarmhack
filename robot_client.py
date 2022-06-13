@@ -185,10 +185,17 @@ async def get_server_data():
 
         for id, robot in reply.items():
             id = int(id)  # ID is sent as an integer - why is this necessary?
-
+            appended_neighbours = {}
             if id in active_robots.keys():  # Filter based on robots of interest
 
                 active_robots[id].orientation = robot["orientation"]
+                # for neighbour in robot["neighbours"]:
+                #   print(neighbour)
+                #   if neighbour in active_robots.keys():
+                #     print(f"This is a neighbour: -=-=-=-=- {neighbour}")
+                #     appended_neighbours[neighbour] = robot["neighbours"][neighbour]
+                #   print(f"{id} is a neighbour of {neighbour}")
+                # print(appended_neighbours)
                 active_robots[id].neighbours = robot["neighbours"]
                 active_robots[id].tasks = robot["tasks"]
 
@@ -266,7 +273,7 @@ async def send_commands(robot):
             elif robot.state == RobotState.STOP:
                 left = right = 0
         else:
-            # Autonomous mode
+          # Autonomous mode
           left, right = default_behaviour(robot)
 
         message["set_motor_speeds"] = {}
@@ -284,6 +291,9 @@ async def send_commands(robot):
 
     except Exception as e:
         print(f"{type(e).__name__}: {e}")
+
+
+
 
 def default_behaviour(robot):
   if robot.state == RobotState.FORWARDS:
@@ -313,6 +323,7 @@ def default_behaviour(robot):
       robot.state = RobotState.FORWARDS
 
   return left,right
+
 
 class MenuState(Enum):
     START = 1
