@@ -265,16 +265,18 @@ async def send_commands(robot):
             elif robot.state == RobotState.BACKWARDS:
                 left = right = -robot.MAX_SPEED
             elif robot.state == RobotState.LEFT:
-                left = -robot.MAX_SPEED * 0.8
-                right = robot.MAX_SPEED * 0.8
+                left = -robot.MAX_SPEED * 0.6
+                right = robot.MAX_SPEED * 0.6
             elif robot.state == RobotState.RIGHT:
-                left = robot.MAX_SPEED * 0.8
-                right = -robot.MAX_SPEED * 0.8
+                left = robot.MAX_SPEED * 0.6
+                right = -robot.MAX_SPEED * 0.6
             elif robot.state == RobotState.STOP:
                 left = right = 0
         else:
           # Autonomous mode
-          left, right = default_behaviour(robot)
+          # left, right = default_behaviour(robot)
+          # left, right = aggregate(robot)
+          left, right = head_towards_goal(robot)
 
         message["set_motor_speeds"] = {}
         message["set_motor_speeds"]["left"] = left
@@ -292,7 +294,54 @@ async def send_commands(robot):
     except Exception as e:
         print(f"{type(e).__name__}: {e}")
 
+def head_towards_goal(robot):
+  selected_task_ID = -1
+  if robot.tasks == {}:
+    return robot.MAX_SPEED, robot.MAX_SPEED
+  for taskID in robot.tasks:
+    print(f"Robot: {robot.id} has tasks: {robot.tasks}")
+    selected_task_ID = taskID
+  if selected_task_ID == -1:
+    #No task has been found within radius
+    left, right = robot.MAX_SPEED
+  else:
+    # If task is within 10cm, stop moving
+    if robot.tasks[taskID]["range"] < 0.10:
+      left = right = 0
+    else:
+      #Rotate clockwise
+      if robot.tasks[taskID]["bearing"] > 20:
+        left = robot.MAX_SPEED / 3
+        right = -robot.MAX_SPEED / 3
+      #Rotate anti-clockwise
+      elif robot.tasks[taskID]["bearing"] < -20:
+        left = -robot.MAX_SPEED / 3
+        right = robot.MAX_SPEED / 3
+      #Else head forwards
+      else:
+        left, right = robot.MAX_SPEED
+  return left, right
 
+def aggregate(robot):
+  """
+  Basic aggregation algorithm, WIP
+  """
+  av_bearing = 0
+  left = 0
+  right = 0
+  for neighbour in robot.neighbours:
+    av_bearing += robot.neighbours[neighbour]["bearing"]
+  if (av_bearing > -30 and av_bearing < 30):
+    left = right = robot.MAX_SPEED
+  elif (av_bearing <= -30):
+    left = robot.MAX_SPEED / 4
+    right = -robot.MAX_SPEED / 4
+  elif (av_bearing >= 30):
+    left = -robot.MAX_SPEED / 4
+    right = robot.MAX_SPEED / 4
+  else:
+    left = right = robot.MAX_SPEED
+  return left, right
 
 
 def default_behaviour(robot):
