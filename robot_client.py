@@ -295,6 +295,8 @@ async def send_commands(robot):
         print(f"{type(e).__name__}: {e}")
 
 def object_avoidance(robot, left, right):
+  if robot.ir_readings == {}:
+    return left, right
   if any(ir > robot.ir_threshold for ir in robot.ir_readings): #Change to any infrared except back 3
     left = robot.MAX_SPEED
     right = -robot.MAX_SPEED
