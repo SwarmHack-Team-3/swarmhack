@@ -277,7 +277,7 @@ async def send_commands(robot):
           # left, right = default_behaviour(robot)
           # left, right = aggregate(robot)
           left, right = head_towards_goal(robot)
-
+          left, right = object_avoidance(robot, left, right)
         message["set_motor_speeds"] = {}
         message["set_motor_speeds"]["left"] = left
         message["set_motor_speeds"]["right"] = right
@@ -293,6 +293,13 @@ async def send_commands(robot):
 
     except Exception as e:
         print(f"{type(e).__name__}: {e}")
+
+def object_avoidance(robot, left, right):
+  if any(ir > robot.ir_threshold for ir in robot.ir_readings): #Change to any infrared except back 3
+    left = robot.MAX_SPEED
+    right = -robot.MAX_SPEED
+  return left, right
+
 
 def head_towards_goal(robot):
   selected_task_ID = -1
