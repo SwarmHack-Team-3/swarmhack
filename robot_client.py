@@ -44,10 +44,14 @@ def kill_now() -> bool:
     global __kill_now
     return __kill_now
 
-
-server_address = "144.32.165.233"
-server_port = 80
-robot_port = 80
+if sys.argv[1] == "--simulator":
+    server_address = sys.argv[2]
+    server_port = sys.argv[3]
+    robot_port = sys.argv[3]
+else:
+    server_address = "144.32.165.233"
+    server_port = 80
+    robot_port = 80
 
 server_connection = None
 active_robots = {}
@@ -109,7 +113,8 @@ async def connect_to_robots():
     for id in active_robots.keys():
         ip = robots[id]
         if ip != '':
-            uri = f"ws://{ip}:{robot_port}"
+            if sys.argv[1] == "--simulator":
+                uri = f"ws://{sys.argv[2]}:{sys.argv[3]}"
             connection = await websockets.connect(uri)
 
             print("Opening connection to robot:", uri)
@@ -118,12 +123,32 @@ async def connect_to_robots():
 
             if awake:
                 print(f"Robot {id} is awake")
+
+                if sys.argv[1] == "--simulator":
+                    await request_robot(id)
+
                 active_robots[id].connection = connection
             else:
                 print(f"Robot {id} did not respond")
         else:
             print(f"No IP defined for robot {id}")
 
+# Simulator-only robot request
+async def request_robot(connection, robotID):
+    try:
+        message = {"get_robot": robotID}
+
+        # Send request for data and wait for reply
+        await connection.send(json.dumps(message))
+        reply_json = await connection.recv()
+        reply = json.loads(reply_json)
+
+        ok = reply
+
+    except Exception as e:
+        print(f"{type(e).__name__}: {e}")
+
+    return ok
 
 async def check_awake(connection):
     awake = False
@@ -475,8 +500,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Specify robots to work with
-    robot_ids = range(1, 6)
-    # robot_ids = [1]
+    # robot_ids = range(1, 6)
+    robot_ids = [1]
 
     for robot_id in robot_ids:
         if robots[robot_id] != '':
