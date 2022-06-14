@@ -311,7 +311,7 @@ def object_avoidance(robot, left, right):
 
 
 def head_towards_goal(robot):
-  selected_task_ID = -1
+  selected_task_ID = -1 #
   closest_task = 1 #1m is greater than sensing range and as such any task will be closer than this
   if robot.tasks == {}: # No tasks found, perform random walk
     return default_behaviour()
@@ -323,25 +323,23 @@ def head_towards_goal(robot):
         closest_task = robot.tasks[taskID]["range"]
     except Exception as e:
       raise f"An error has occured unpacking the tasks range. Error was: {e}"
-  if selected_task_ID == -1:
-    #No task has been found within radius
-    left, right = robot.MAX_SPEED
+
+  # If task is within 10cm, stop moving (TODO: Decide if waiting is worthwhile)
+  if robot.tasks[selected_task_ID]["range"] < 0.10:
+    left = right = 0
   else:
-    # If task is within 10cm, stop moving
-    if robot.tasks[taskID]["range"] < 0.10:
-      left = right = 0
+    #Rotate clockwise
+    if robot.tasks[selected_task_ID]["bearing"] > 20:
+      left = robot.MAX_SPEED / 3
+      right = -robot.MAX_SPEED / 3
+    #Rotate anti-clockwise
+    elif robot.tasks[selected_task_ID]["bearing"] < -20:
+      left = -robot.MAX_SPEED / 3
+      right = robot.MAX_SPEED / 3
+    #Else head forwards
     else:
-      #Rotate clockwise
-      if robot.tasks[taskID]["bearing"] > 20:
-        left = robot.MAX_SPEED / 3
-        right = -robot.MAX_SPEED / 3
-      #Rotate anti-clockwise
-      elif robot.tasks[taskID]["bearing"] < -20:
-        left = -robot.MAX_SPEED / 3
-        right = robot.MAX_SPEED / 3
-      #Else head forwards
-      else:
-        left, right = robot.MAX_SPEED
+      left, right = robot.MAX_SPEED
+
   return left, right
 
 def aggregate(robot):
