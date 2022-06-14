@@ -80,6 +80,8 @@ class Robot:
         self.battery_charging = False
         self.battery_voltage = 0
         self.battery_percentage = 0
+        self.in_task = False
+        self.task_id = -1
 
         self.turn_time = time.time()
 
@@ -265,19 +267,46 @@ async def send_commands(robot):
         else:
           left = right = 0
           leaderRobot = -1
+          goToFriend = (-1, -1)
+          test_for_task = 0
+
+        for taskID in robot.tasks:
+          if (robot.tasks[taskID]["range"] < 0.25):
+            test_for_task += 1
+
+        if test_for_task == 0:
+          robot.in_task = False
+          robot.task_id = -1
+
           # Autonomous mode
           for key, activeRobot in active_robots.items():
             if (activeRobot.teleop and str(key) in robot.neighbours.keys()):
               leaderRobot = activeRobot.id
-              print("EVER REACHING HERE ======================")
-          # left, right = default_behaviour(robot)
-          # left, right = aggregate(robot)
+            if (activeRobot.in_task and str(key) in robot.neighbours.keys()):
+              print("333333333333333333333333333333333333333")
+              goToFriend[0] = activeRobot.id
+              goToFriend[1] = activeRobot.in_task
 
           if (leaderRobot != -1):
-            left, right = follow_teleop(robot, active_robots[leaderRobot], left, right)
+            left, right = head_towards_leader(robot, active_robots[leaderRobot], left, right)
+
           else:
-            left, right = head_towards_goal(robot)
-            left, right = object_avoidance(robot, left, right)
+            if (str(goToFriend[1]) in robot.tasks.keys()): #If Robot can see task, go towards it
+              print("111111111111111111111111111111111111111111111111111")
+
+              left, right = head_towards_goal(robot, left, right, activeRobot.task_id)
+              print("111111111111111111111111111111111111111111111111111")
+            elif (str(goToFriend[0]) in robot.neighbours.keys()): #If Robot can see neighbour, go towards it
+              print("222222222222222222222222222222222222222222222222222222222")
+              left, right = head_towards_leader(robot, activeRobot, left, right)
+              print("222222222222222222222222222222222222222222222222222222222")
+            else:
+              left, right = head_towards_goal(robot, left, right)
+              left, right = object_avoidance(robot, left, right)
+            # left, right = default_behaviour(robot)
+            # left, right = aggregate(robot)
+
+
 
         message["set_motor_speeds"] = {}
         message["set_motor_speeds"]["left"] = left
@@ -305,7 +334,11 @@ def getSmallestAngle(desired, actual):
     return diff
 
 
-def follow_teleop(robot, control_robot, left, right):
+def steer():
+  pass
+
+
+def head_towards_leader(robot, control_robot, left, right):
   desired_bearing = robot.neighbours[str(control_robot.id)]["bearing"]
   new_heading = desired_bearing #getSmallestAngle(desired_bearing, robot.orientation)
 
@@ -343,35 +376,43 @@ def object_avoidance(robot, left, right):
   return left, right
 
 
-def head_towards_goal(robot):
+def head_towards_goal(robot, left, right, task_to_go_to=-1):
   selected_task_ID = -1 #
   closest_task = 1 #1m is greater than sensing range and as such any task will be closer than this
   if robot.tasks == {}: # No tasks found, perform random walk
     return default_behaviour(robot)
-
-  try:
-    for taskID in robot.tasks:
-      if robot.tasks[taskID]["range"] < closest_task:
-        selected_task_ID = taskID
-        closest_task = robot.tasks[taskID]["range"]
-  except Exception as e:
-    print(f"An error has occured unpacking the tasks range. Error was: {e}")
+  if task_to_go_to != -1:
+    selected_task_ID = task_to_go_to
+  else:
+    try:
+      for taskID in robot.tasks:
+        if robot.tasks[taskID]["range"] < closest_task:
+          selected_task_ID = taskID
+          closest_task = robot.tasks[taskID]["range"]
+    except Exception as e:
+      print(f"An error has occured unpacking the tasks range. Error was: {e}")
 
   # If task is within 10cm, stop moving (TODO: Decide if waiting is worthwhile)
   if robot.tasks[selected_task_ID]["range"] < 0.10:
     left = right = 0
+    robot.in_task = True
+    robot.task_id = selected_task_ID
+    return left, right
+  elif robot.tasks[selected_task_ID]["range"] < 0.25:
+    robot.in_task = True
+    robot.task_id = selected_task_ID
+    print("I am here")
+  #Rotate clockwise
+  if robot.tasks[selected_task_ID]['bearing'] > 20:
+    left = robot.MAX_SPEED / 3
+    right = -robot.MAX_SPEED / 3
+  #Rotate anti-clockwise
+  elif robot.tasks[selected_task_ID]['bearing'] < -20:
+    left = -robot.MAX_SPEED / 3
+    right = robot.MAX_SPEED / 3
+  #Else head forwards
   else:
-    #Rotate clockwise
-    if robot.tasks[selected_task_ID]['bearing'] > 20:
-      left = robot.MAX_SPEED / 3
-      right = -robot.MAX_SPEED / 3
-    #Rotate anti-clockwise
-    elif robot.tasks[selected_task_ID]['bearing'] < -20:
-      left = -robot.MAX_SPEED / 3
-      right = robot.MAX_SPEED / 3
-    #Else head forwards
-    else:
-      left = right = robot.MAX_SPEED
+    left = right = robot.MAX_SPEED
 
   return left, right
 
