@@ -276,8 +276,7 @@ async def send_commands(robot):
           # Autonomous mode
           # left, right = default_behaviour(robot)
           # left, right = aggregate(robot)
-          # left, right = head_towards_goal(robot)
-          left = right = robot.MAX_SPEED
+          left, right = head_towards_goal(robot)
           left, right = object_avoidance(robot, left, right)
         message["set_motor_speeds"] = {}
         message["set_motor_speeds"]["left"] = left
@@ -315,16 +314,17 @@ def head_towards_goal(robot):
   selected_task_ID = -1 #
   closest_task = 1 #1m is greater than sensing range and as such any task will be closer than this
   if robot.tasks == {}: # No tasks found, perform random walk
-    return default_behaviour()
+    return default_behaviour(robot)
 
-  for taskID in robot.tasks:
-    try:
+  try:
+    for taskID in robot.tasks:
       if robot.tasks[taskID]["range"] < closest_task:
         selected_task_ID = taskID
         closest_task = robot.tasks[taskID]["range"]
-    except Exception as e:
-      raise f"An error has occured unpacking the tasks range. Error was: {e}"
+  except Exception as e:
+    print(f"An error has occured unpacking the tasks range. Error was: {e}")
 
+  print(f"The selected ID: {selected_task_ID} was selected from ")
   # If task is within 10cm, stop moving (TODO: Decide if waiting is worthwhile)
   if robot.tasks[selected_task_ID]["range"] < 0.10:
     left = right = 0
