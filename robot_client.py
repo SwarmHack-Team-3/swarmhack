@@ -263,11 +263,22 @@ async def send_commands(robot):
             elif robot.state == RobotState.STOP:
                 left = right = 0
         else:
+          left = right = 0
+          leaderRobot = -1
           # Autonomous mode
+          for key, activeRobot in active_robots.items():
+            if (activeRobot.teleop and str(key) in robot.neighbours.keys()):
+              leaderRobot = activeRobot.id
+              print("EVER REACHING HERE ======================")
           # left, right = default_behaviour(robot)
           # left, right = aggregate(robot)
-          left, right = head_towards_goal(robot)
-          left, right = object_avoidance(robot, left, right)
+
+          if (leaderRobot != -1):
+            left, right = follow_teleop(robot, active_robots[leaderRobot], left, right)
+          else:
+            left, right = head_towards_goal(robot)
+            left, right = object_avoidance(robot, left, right)
+
         message["set_motor_speeds"] = {}
         message["set_motor_speeds"]["left"] = left
         message["set_motor_speeds"]["right"] = right
@@ -283,6 +294,38 @@ async def send_commands(robot):
 
     except Exception as e:
         print(f"{type(e).__name__}: {e}")
+
+
+def getSmallestAngle(desired, actual):
+  diff = desired - actual
+  other = (360 - abs(diff))*(-(diff/abs(diff)))
+  if abs(other) < abs(diff):
+    return other
+  else:
+    return diff
+
+
+def follow_teleop(robot, control_robot, left, right):
+  desired_bearing = robot.neighbours[str(control_robot.id)]["bearing"]
+  new_heading = desired_bearing #getSmallestAngle(desired_bearing, robot.orientation)
+
+  coeff = abs(new_heading/180)
+
+  print(desired_bearing)
+  print(robot.orientation)
+  print(new_heading)
+
+  if (new_heading > 20):
+    left = robot.MAX_SPEED
+    right = robot.MAX_SPEED * (1-coeff)
+  elif (new_heading < -20):
+    #left = new_heading / robot.MAX_SPEED
+    left = robot.MAX_SPEED * (1-coeff)
+    right = robot.MAX_SPEED
+  else:
+    left = right = robot.MAX_SPEED
+
+  return left, right
 
 def object_avoidance(robot, left, right):
   if robot.ir_readings == {}:
@@ -314,22 +357,21 @@ def head_towards_goal(robot):
   except Exception as e:
     print(f"An error has occured unpacking the tasks range. Error was: {e}")
 
-  print(f"The selected ID: {selected_task_ID} was selected from ")
   # If task is within 10cm, stop moving (TODO: Decide if waiting is worthwhile)
   if robot.tasks[selected_task_ID]["range"] < 0.10:
     left = right = 0
   else:
     #Rotate clockwise
-    if robot.tasks[selected_task_ID]["bearing"] > 20:
+    if robot.tasks[selected_task_ID]['bearing'] > 20:
       left = robot.MAX_SPEED / 3
       right = -robot.MAX_SPEED / 3
     #Rotate anti-clockwise
-    elif robot.tasks[selected_task_ID]["bearing"] < -20:
+    elif robot.tasks[selected_task_ID]['bearing'] < -20:
       left = -robot.MAX_SPEED / 3
       right = robot.MAX_SPEED / 3
     #Else head forwards
     else:
-      left, right = robot.MAX_SPEED
+      left = right = robot.MAX_SPEED
 
   return left, right
 
@@ -486,7 +528,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Specify robots to work with
-    robot_ids = range(2, 4)
+    robot_ids = range(4, 6)
     # robot_ids = [1]
 
     for robot_id in robot_ids:
