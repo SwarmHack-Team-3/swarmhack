@@ -181,21 +181,12 @@ async def get_server_data():
         ids = list(reply.keys())
         ids = [int(id) for id in ids]
 
-        # print(reply.items())
-
         for id, robot in reply.items():
             id = int(id)  # ID is sent as an integer - why is this necessary?
             appended_neighbours = {}
             if id in active_robots.keys():  # Filter based on robots of interest
 
                 active_robots[id].orientation = robot["orientation"]
-                # for neighbour in robot["neighbours"]:
-                #   print(neighbour)
-                #   if neighbour in active_robots.keys():
-                #     print(f"This is a neighbour: -=-=-=-=- {neighbour}")
-                #     appended_neighbours[neighbour] = robot["neighbours"][neighbour]
-                #   print(f"{id} is a neighbour of {neighbour}")
-                # print(appended_neighbours)
                 active_robots[id].neighbours = {k:r for k,r in robot["neighbours"].items() if int(k) in active_robots}
                 active_robots[id].tasks = robot["tasks"]
 
