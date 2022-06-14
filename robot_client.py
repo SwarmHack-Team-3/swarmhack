@@ -84,6 +84,8 @@ class Robot:
         self.battery_charging = False
         self.battery_voltage = 0
         self.battery_percentage = 0
+        self.in_task = False
+        self.task_id = -1
 
         self.turn_time = time.time()
 
@@ -206,22 +208,12 @@ async def get_server_data():
         ids = list(reply.keys())
         ids = [int(id) for id in ids]
 
-        # print(reply.items())
-
         for id, robot in reply.items():
             id = int(id)  # ID is sent as an integer - why is this necessary?
-            appended_neighbours = {}
             if id in active_robots.keys():  # Filter based on robots of interest
 
                 active_robots[id].orientation = robot["orientation"]
-                # for neighbour in robot["neighbours"]:
-                #   print(neighbour)
-                #   if neighbour in active_robots.keys():
-                #     print(f"This is a neighbour: -=-=-=-=- {neighbour}")
-                #     appended_neighbours[neighbour] = robot["neighbours"][neighbour]
-                #   print(f"{id} is a neighbour of {neighbour}")
-                # print(appended_neighbours)
-                active_robots[id].neighbours = robot["neighbours"]
+                active_robots[id].neighbours = {k:r for k,r in robot["neighbours"].items() if int(k) in active_robots}
                 active_robots[id].tasks = robot["tasks"]
 
                 print(f"Robot {id}")
@@ -298,10 +290,48 @@ async def send_commands(robot):
             elif robot.state == RobotState.STOP:
                 left = right = 0
         else:
+          left = right = 0
+          leaderRobot = -1
+          goToFriend = (-1, -1)
+          test_for_task = 0
+
+        for taskID in robot.tasks:
+          if (robot.tasks[taskID]["range"] < 0.25):
+            test_for_task += 1
+
+        if test_for_task == 0:
+          robot.in_task = False
+          robot.task_id = -1
+
           # Autonomous mode
-          # left, right = default_behaviour(robot)
-          # left, right = aggregate(robot)
-          left, right = head_towards_goal(robot)
+          for key, activeRobot in active_robots.items():
+            if (activeRobot.teleop and str(key) in robot.neighbours.keys()):
+              leaderRobot = activeRobot.id
+            if (activeRobot.in_task and str(key) in robot.neighbours.keys()):
+              print("333333333333333333333333333333333333333")
+              goToFriend[0] = activeRobot.id
+              goToFriend[1] = activeRobot.in_task
+
+          if (leaderRobot != -1):
+            left, right = head_towards_leader(robot, active_robots[leaderRobot], left, right)
+
+          else:
+            if (str(goToFriend[1]) in robot.tasks.keys()): #If Robot can see task, go towards it
+              print("111111111111111111111111111111111111111111111111111")
+
+              left, right = head_towards_goal(robot, left, right, activeRobot.task_id)
+              print("111111111111111111111111111111111111111111111111111")
+            elif (str(goToFriend[0]) in robot.neighbours.keys()): #If Robot can see neighbour, go towards it
+              print("222222222222222222222222222222222222222222222222222222222")
+              left, right = head_towards_leader(robot, activeRobot, left, right)
+              print("222222222222222222222222222222222222222222222222222222222")
+            else:
+              left, right = head_towards_goal(robot, left, right)
+              left, right = object_avoidance(robot, left, right)
+            # left, right = default_behaviour(robot)
+            # left, right = aggregate(robot)
+
+
 
         message["set_motor_speeds"] = {}
         message["set_motor_speeds"]["left"] = left
@@ -319,32 +349,96 @@ async def send_commands(robot):
     except Exception as e:
         print(f"{type(e).__name__}: {e}")
 
-def head_towards_goal(robot):
-  selected_task_ID = -1
-  if robot.tasks == {}:
-    return robot.MAX_SPEED, robot.MAX_SPEED
-  for taskID in robot.tasks:
-    print(f"Robot: {robot.id} has tasks: {robot.tasks}")
-    selected_task_ID = taskID
-  if selected_task_ID == -1:
-    #No task has been found within radius
-    left, right = robot.MAX_SPEED
+
+def getSmallestAngle(desired, actual):
+  diff = desired - actual
+  other = (360 - abs(diff))*(-(diff/abs(diff)))
+  if abs(other) < abs(diff):
+    return other
   else:
-    # If task is within 10cm, stop moving
-    if robot.tasks[taskID]["range"] < 0.10:
-      left = right = 0
-    else:
-      #Rotate clockwise
-      if robot.tasks[taskID]["bearing"] > 20:
-        left = robot.MAX_SPEED / 3
-        right = -robot.MAX_SPEED / 3
-      #Rotate anti-clockwise
-      elif robot.tasks[taskID]["bearing"] < -20:
-        left = -robot.MAX_SPEED / 3
-        right = robot.MAX_SPEED / 3
-      #Else head forwards
-      else:
-        left, right = robot.MAX_SPEED
+    return diff
+
+
+def steer():
+  pass
+
+
+def head_towards_leader(robot, control_robot, left, right):
+  desired_bearing = robot.neighbours[str(control_robot.id)]["bearing"]
+  new_heading = desired_bearing #getSmallestAngle(desired_bearing, robot.orientation)
+
+  coeff = abs(new_heading/180)
+
+  print(desired_bearing)
+  print(robot.orientation)
+  print(new_heading)
+
+  if (new_heading > 20):
+    left = robot.MAX_SPEED
+    right = robot.MAX_SPEED * (1-coeff)
+  elif (new_heading < -20):
+    #left = new_heading / robot.MAX_SPEED
+    left = robot.MAX_SPEED * (1-coeff)
+    right = robot.MAX_SPEED
+  else:
+    left = right = robot.MAX_SPEED
+
+  return left, right
+
+def object_avoidance(robot, left, right):
+  if robot.ir_readings == {}:
+    return left, right
+  elif robot.ir_readings[1] > robot.ir_threshold and robot.ir_readings[6] > robot.ir_threshold and robot.ir_readings[3] > robot.ir_threshold and robot.ir_readings[4] > robot.ir_threshold:
+    #Robot is trapped. Need to program behaviour for this
+    pass
+  elif robot.ir_readings[0] > robot.ir_threshold or robot.ir_readings[1] > robot.ir_threshold:
+    left = -robot.MAX_SPEED/2
+    right = robot.MAX_SPEED/2
+  elif robot.ir_readings[6] > robot.ir_threshold or robot.ir_readings[7] > robot.ir_threshold:
+    left = robot.MAX_SPEED/2
+    right = -robot.MAX_SPEED/2
+  #If there is no objects to collide into, the initial decision for left and right is adhered to
+  return left, right
+
+
+def head_towards_goal(robot, left, right, task_to_go_to=-1):
+  selected_task_ID = -1 #
+  closest_task = 1 #1m is greater than sensing range and as such any task will be closer than this
+  if robot.tasks == {}: # No tasks found, perform random walk
+    return default_behaviour(robot)
+  if task_to_go_to != -1:
+    selected_task_ID = task_to_go_to
+  else:
+    try:
+      for taskID in robot.tasks:
+        if robot.tasks[taskID]["range"] < closest_task:
+          selected_task_ID = taskID
+          closest_task = robot.tasks[taskID]["range"]
+    except Exception as e:
+      print(f"An error has occured unpacking the tasks range. Error was: {e}")
+
+  # If task is within 10cm, stop moving (TODO: Decide if waiting is worthwhile)
+  if robot.tasks[selected_task_ID]["range"] < 0.10:
+    left = right = 0
+    robot.in_task = True
+    robot.task_id = selected_task_ID
+    return left, right
+  elif robot.tasks[selected_task_ID]["range"] < 0.25:
+    robot.in_task = True
+    robot.task_id = selected_task_ID
+    print("I am here")
+  #Rotate clockwise
+  if robot.tasks[selected_task_ID]['bearing'] > 20:
+    left = robot.MAX_SPEED / 3
+    right = -robot.MAX_SPEED / 3
+  #Rotate anti-clockwise
+  elif robot.tasks[selected_task_ID]['bearing'] < -20:
+    left = -robot.MAX_SPEED / 3
+    right = robot.MAX_SPEED / 3
+  #Else head forwards
+  else:
+    left = right = robot.MAX_SPEED
+
   return left, right
 
 def aggregate(robot):
@@ -500,8 +594,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Specify robots to work with
-    # robot_ids = range(1, 6)
-    robot_ids = [1]
+    robot_ids = range(4, 6)
+    # robot_ids = [1]
 
     for robot_id in robot_ids:
         if robots[robot_id] != '':
