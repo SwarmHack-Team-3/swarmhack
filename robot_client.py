@@ -196,7 +196,7 @@ async def get_server_data():
                 #     appended_neighbours[neighbour] = robot["neighbours"][neighbour]
                 #   print(f"{id} is a neighbour of {neighbour}")
                 # print(appended_neighbours)
-                active_robots[id].neighbours = robot["neighbours"]
+                active_robots[id].neighbours = {k:r for k,r in robot["neighbours"].items() if int(k) in active_robots}
                 active_robots[id].tasks = robot["tasks"]
 
                 print(f"Robot {id}")
@@ -276,7 +276,8 @@ async def send_commands(robot):
           # Autonomous mode
           # left, right = default_behaviour(robot)
           # left, right = aggregate(robot)
-          left, right = head_towards_goal(robot)
+          # left, right = head_towards_goal(robot)
+          left = right = robot.MAX_SPEED
           left, right = object_avoidance(robot, left, right)
         message["set_motor_speeds"] = {}
         message["set_motor_speeds"]["left"] = left
@@ -297,7 +298,7 @@ async def send_commands(robot):
 def object_avoidance(robot, left, right):
   if robot.ir_readings == {}:
     return left, right
-  elif robot.ir_readings[1] > robot.ir_threshold and robot.ir_readings[6] > robot.ir_threshold:
+  elif robot.ir_readings[1] > robot.ir_threshold and robot.ir_readings[6] > robot.ir_threshold and robot.ir_readings[3] > robot.ir_threshold and robot.ir_readings[4] > robot.ir_threshold:
     #Robot is trapped. Need to program behaviour for this
     pass
   elif robot.ir_readings[0] > robot.ir_threshold or robot.ir_readings[1] > robot.ir_threshold:
@@ -495,7 +496,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Specify robots to work with
-    robot_ids = range(1, 6)
+    robot_ids = range(2, 4)
     # robot_ids = [1]
 
     for robot_id in robot_ids:
