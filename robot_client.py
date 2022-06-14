@@ -297,9 +297,16 @@ async def send_commands(robot):
 def object_avoidance(robot, left, right):
   if robot.ir_readings == {}:
     return left, right
-  if any(ir > robot.ir_threshold for ir in robot.ir_readings): #Change to any infrared except back 3
-    left = robot.MAX_SPEED
-    right = -robot.MAX_SPEED
+  elif robot.ir_readings[1] > robot.ir_threshold and robot.ir_readings[6] > robot.ir_threshold:
+    #Robot is trapped. Need to program behaviour for this
+    pass
+  elif robot.ir_readings[0] > robot.ir_threshold or robot.ir_readings[1] > robot.ir_threshold:
+    left = -robot.MAX_SPEED/2
+    right = robot.MAX_SPEED/2
+  elif robot.ir_readings[6] > robot.ir_threshold or robot.ir_readings[7] > robot.ir_threshold:
+    left = robot.MAX_SPEED/2
+    right = -robot.MAX_SPEED/2
+  #If there is no objects to collide into, the initial decision for left and right is adhered to
   return left, right
 
 
