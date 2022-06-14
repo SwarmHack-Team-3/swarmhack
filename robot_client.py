@@ -87,6 +87,9 @@ class Robot:
         self.in_task = False
         self.task_id = -1
 
+        self.random_left = self.MAX_SPEED
+        self.random_right = self.MAX_SPEED * (0.5 + (random.random()*0.5))
+
         self.turn_time = time.time()
 
         if id < 31:
@@ -291,42 +294,35 @@ async def send_commands(robot):
         else:
           left = right = 0
           leaderRobot = -1
-          goToFriend = (-1, -1)
+          goToFriend = [-1, -1]
           test_for_task = 0
 
-        for taskID in robot.tasks:
-          if (robot.tasks[taskID]["range"] < 0.25):
-            test_for_task += 1
+          for taskID in robot.tasks:
+            if (robot.tasks[taskID]["range"] < 0.25):
+              test_for_task += 1
 
-        if test_for_task == 0:
-          robot.in_task = False
-          robot.task_id = -1
+          if test_for_task == 0:
+            robot.in_task = False
+            robot.task_id = -1
 
           # Autonomous mode
           for key, activeRobot in active_robots.items():
             if (activeRobot.teleop and str(key) in robot.neighbours.keys()):
               leaderRobot = activeRobot.id
             if (activeRobot.in_task and str(key) in robot.neighbours.keys()):
-              print("333333333333333333333333333333333333333")
               goToFriend[0] = activeRobot.id
-              goToFriend[1] = activeRobot.in_task
-
+              goToFriend[1] = activeRobot.task_id
           if (leaderRobot != -1):
             left, right = head_towards_leader(robot, active_robots[leaderRobot], left, right)
-
           else:
-            if (str(goToFriend[1]) in robot.tasks.keys()): #If Robot can see task, go towards it
-              print("111111111111111111111111111111111111111111111111111")
-
-              left, right = head_towards_goal(robot, left, right, activeRobot.task_id)
-              print("111111111111111111111111111111111111111111111111111")
+            if (goToFriend[1] in robot.tasks.keys()): #If Robot can see task, go towards it
+              left, right = head_towards_goal(robot, left, right, active_robots[goToFriend[0]].task_id)
             elif (str(goToFriend[0]) in robot.neighbours.keys()): #If Robot can see neighbour, go towards it
-              print("222222222222222222222222222222222222222222222222222222222")
-              left, right = head_towards_leader(robot, activeRobot, left, right)
-              print("222222222222222222222222222222222222222222222222222222222")
+              left, right = head_towards_leader(robot, active_robots[goToFriend[0]], left, right)
             else:
               left, right = head_towards_goal(robot, left, right)
-              left, right = object_avoidance(robot, left, right)
+              if (left != 0 and right != 0):
+                left, right = object_avoidance(robot, left, right)
             # left, right = default_behaviour(robot)
             # left, right = aggregate(robot)
 
@@ -381,7 +377,10 @@ def head_towards_leader(robot, control_robot, left, right):
     left = robot.MAX_SPEED * (1-coeff)
     right = robot.MAX_SPEED
   else:
-    left = right = robot.MAX_SPEED
+    if (robot.neighbours[str(control_robot.id)]["neighbours"] < 0.10):
+      pass
+    else:
+      left = right = robot.MAX_SPEED
 
   return left, right
 
@@ -405,7 +404,7 @@ def head_towards_goal(robot, left, right, task_to_go_to=-1):
   selected_task_ID = -1 #
   closest_task = 1 #1m is greater than sensing range and as such any task will be closer than this
   if robot.tasks == {}: # No tasks found, perform random walk
-    return default_behaviour(robot)
+    return random_walk(robot, left, right)
   if task_to_go_to != -1:
     selected_task_ID = task_to_go_to
   else:
@@ -426,7 +425,7 @@ def head_towards_goal(robot, left, right, task_to_go_to=-1):
   elif robot.tasks[selected_task_ID]["range"] < 0.25:
     robot.in_task = True
     robot.task_id = selected_task_ID
-    print("I am here")
+
   #Rotate clockwise
   if robot.tasks[selected_task_ID]['bearing'] > 20:
     left = robot.MAX_SPEED / 3
@@ -462,6 +461,16 @@ def aggregate(robot):
     left = right = robot.MAX_SPEED
   return left, right
 
+
+def random_walk(robot, left, right):
+  if random.random() > 0.80:
+    if random.choice([True,False]):
+      robot.random_left = robot.MAX_SPEED
+      robot.random_right = robot.MAX_SPEED * (0.5 + (random.random()*0.5))
+    else:
+      robot.random_right = robot.MAX_SPEED
+      robot.random_left = robot.MAX_SPEED * (0.5 + (random.random()*0.5))
+  return robot.random_left, robot.random_right
 
 def default_behaviour(robot):
   if robot.state == RobotState.FORWARDS:
@@ -594,7 +603,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Specify robots to work with
-    robot_ids = range(1, 5)
+    robot_ids = range(1, 6)
     # robot_ids = [1]
 
     for robot_id in robot_ids:
