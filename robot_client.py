@@ -183,7 +183,6 @@ async def get_server_data():
 
         for id, robot in reply.items():
             id = int(id)  # ID is sent as an integer - why is this necessary?
-            appended_neighbours = {}
             if id in active_robots.keys():  # Filter based on robots of interest
 
                 active_robots[id].orientation = robot["orientation"]
