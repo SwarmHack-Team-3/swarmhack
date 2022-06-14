@@ -312,8 +312,8 @@ def object_avoidance(robot, left, right):
 
 def head_towards_goal(robot):
   selected_task_ID = -1
-  if robot.tasks == {}:
-    return robot.MAX_SPEED, robot.MAX_SPEED
+  if robot.tasks == {}: # No tasks found, perform random walk
+    return default_behaviour()
   for taskID in robot.tasks:
     print(f"Robot: {robot.id} has tasks: {robot.tasks}")
     selected_task_ID = taskID
