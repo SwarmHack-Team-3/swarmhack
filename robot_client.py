@@ -343,6 +343,7 @@ def head_towards_goal(robot):
 
   return left, right
 
+
 def aggregate(robot):
   """
   Basic aggregation algorithm, WIP
