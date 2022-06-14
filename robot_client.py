@@ -312,11 +312,17 @@ def object_avoidance(robot, left, right):
 
 def head_towards_goal(robot):
   selected_task_ID = -1
+  closest_task = 1 #1m is greater than sensing range and as such any task will be closer than this
   if robot.tasks == {}: # No tasks found, perform random walk
     return default_behaviour()
+
   for taskID in robot.tasks:
-    print(f"Robot: {robot.id} has tasks: {robot.tasks}")
-    selected_task_ID = taskID
+    try:
+      if robot.tasks[taskID]["range"] < closest_task:
+        selected_task_ID = taskID
+        closest_task = robot.tasks[taskID]["range"]
+    except Exception as e:
+      raise f"An error has occured unpacking the tasks range. Error was: {e}"
   if selected_task_ID == -1:
     #No task has been found within radius
     left, right = robot.MAX_SPEED
