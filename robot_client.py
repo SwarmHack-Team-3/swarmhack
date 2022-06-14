@@ -97,7 +97,7 @@ class Robot:
 
 async def connect_to_server():
     uri = f"ws://{server_address}:{server_port}"
-    connection = await websockets.connect(uri)
+    connection = await websockets.connect(uri, ping_interval=None)
 
     print("Opening connection to server: " + uri)
 
@@ -117,7 +117,7 @@ async def connect_to_robots():
         if ip != '':
             if sys.argv[1] == "--simulator":
                 uri = f"ws://{sys.argv[2]}:{sys.argv[3]}"
-            connection = await websockets.connect(uri)
+            connection = await websockets.connect(uri, ping_interval=None)
 
             print("Opening connection to robot:", uri)
 
@@ -127,7 +127,7 @@ async def connect_to_robots():
                 print(f"Robot {id} is awake")
 
                 if sys.argv[1] == "--simulator":
-                    await request_robot(id)
+                    await request_robot(connection, id)
 
                 active_robots[id].connection = connection
             else:
@@ -138,19 +138,17 @@ async def connect_to_robots():
 # Simulator-only robot request
 async def request_robot(connection, robotID):
     try:
-        message = {"get_robot": robotID}
+        message = {"sel_robot": robotID}
 
         # Send request for data and wait for reply
         await connection.send(json.dumps(message))
         reply_json = await connection.recv()
         reply = json.loads(reply_json)
-
-        ok = reply
+        print("Got response from robot", robotID)
+        return reply
 
     except Exception as e:
         print(f"{type(e).__name__}: {e}")
-
-    return ok
 
 async def check_awake(connection):
     awake = False
@@ -166,7 +164,7 @@ async def check_awake(connection):
         awake = reply["awake"]
 
     except Exception as e:
-        print(f"{type(e).__name__}: {e}")
+        print(f"check_awake {type(e).__name__}: {e}")
 
     return awake
 
@@ -223,7 +221,7 @@ async def get_server_data():
                 print()
 
     except Exception as e:
-        print(f"{type(e).__name__}: {e}")
+        print(f"get_server_data {type(e).__name__}: {e}")
 
 
 async def stop_robot(robot):
@@ -237,11 +235,11 @@ async def stop_robot(robot):
         # Send command message
         await robot.connection.send(json.dumps(message))
     except Exception as e:
-        print(f"{type(e).__name__}: {e}")
+        print(f"stop_robot {type(e).__name__}: {e}")
 
 
 async def get_data(robot):
-    try:
+    # try:
         message = {"get_ir": True, "get_battery": True}
 
         # Send request for data and wait for reply
@@ -251,16 +249,17 @@ async def get_data(robot):
 
         robot.ir_readings = reply["ir"]
 
-        robot.battery_voltage = reply["battery"]["voltage"]
-        robot.battery_percentage = reply["battery"]["percentage"]
+
+          # robot.battery_voltage = reply["battery"]["voltage"]
+          # robot.battery_percentage = reply["battery"]["percentage"]
 
         print(f"[Robot {robot.id}] IR readings: {robot.ir_readings}")
-        print("[Robot {}] Battery: {:.2f}V, {}%" .format(robot.id,
-                                                         robot.battery_voltage,
-                                                         robot.battery_percentage))
+        # print("[Robot {}] Battery: {:.2f}V, {}%" .format(robot.id,
+        #                                                  robot.battery_voltage,
+        #                                                  robot.battery_percentage))
 
-    except Exception as e:
-        print(f"{type(e).__name__}: {e}")
+    # except Exception as e:
+    #     print(f"get_ir {type(e).__name__}: {e}")
 
 
 async def send_commands(robot):
@@ -344,10 +343,11 @@ async def send_commands(robot):
             message["set_leds_colour"] = "green"
 
         # Send command message
+        # print("Sending command message to", robot)
         await robot.connection.send(json.dumps(message))
 
-    except Exception as e:
-        print(f"{type(e).__name__}: {e}")
+    except ValueError as e:
+        print(f"send_commands {type(e).__name__}: {e}")
 
 
 def getSmallestAngle(desired, actual):
@@ -594,7 +594,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Specify robots to work with
-    robot_ids = range(4, 6)
+    robot_ids = range(1, 5)
     # robot_ids = [1]
 
     for robot_id in robot_ids:
@@ -612,8 +612,8 @@ if __name__ == "__main__":
 
     # Listen for keyboard input from teleop websocket client
     print(Fore.GREEN + "[INFO]: Starting teleop server")
-    start_server = websockets.serve(ws_handler=handler, host=None, port=7000, ping_interval=None, ping_timeout=None)
-    loop.run_until_complete(start_server)
+    # start_server = websockets.serve(ws_handler=handler, host=None, port=7000, ping_interval=None, ping_timeout=None)
+    # loop.run_until_complete(start_server)
 
     # Only communicate with robots that were successfully connected to
     while True:
