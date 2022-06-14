@@ -352,7 +352,10 @@ def head_towards_leader(robot, control_robot, left, right):
     left = robot.MAX_SPEED * (1-coeff)
     right = robot.MAX_SPEED
   else:
-    left = right = robot.MAX_SPEED
+    if (robot.neighbours[str(control_robot.id)]["neighbours"] < 0.10):
+      pass
+    else:
+      left = right = robot.MAX_SPEED
 
   return left, right
 
