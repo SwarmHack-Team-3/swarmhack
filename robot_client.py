@@ -306,25 +306,34 @@ async def send_commands(robot):
 
           # Autonomous mode
           for key, activeRobot in active_robots.items():
+            # Identify an active tele-operated robot
             if (activeRobot.teleop and str(key) in robot.neighbours.keys()):
               leaderRobot = activeRobot.id
+            # Identify a neighbour robot within a task
             if (activeRobot.in_task and str(key) in robot.neighbours.keys()):
               goToFriend[0] = activeRobot.id
               goToFriend[1] = activeRobot.task_id
+          # If there is a tele operated robot, follow it
           if (leaderRobot != -1):
+            message["set_leds_colour"] = "magenta"
             left, right = head_towards_leader(robot, active_robots[leaderRobot], left, right)
           else:
+            # If a robot can see a neighbours task, go to it
             if (goToFriend[1] in robot.tasks.keys()): #If Robot can see task, go towards it
+              message["set_leds_colour"] = "yellow"
               left, right = head_towards_goal(robot, left, right, active_robots[goToFriend[0]].task_id)
-            elif (str(goToFriend[0]) in robot.neighbours.keys()): #If Robot can see neighbour, go towards it
+            # If a robot can see a neighbour in a task they cannot see, go to it
+            elif (str(goToFriend[0]) in robot.neighbours.keys()):
+              message["set_leds_colour"] = "cyan"
               left, right = head_towards_leader(robot, active_robots[goToFriend[0]], left, right)
             else:
+              # Otherwise if they have no neighbours in goals, head towards their own goal
+              # If there are no goals, this will result in random sweeping movement
+              message["set_leds_colour"] = "black"
               left, right = head_towards_goal(robot, left, right)
               if (left != 0 and right != 0):
+                # If the robot is intending to move, run object avoidance
                 left, right = object_avoidance(robot, left, right)
-            # left, right = default_behaviour(robot)
-            # left, right = aggregate(robot)
-
 
 
         message["set_motor_speeds"] = {}
