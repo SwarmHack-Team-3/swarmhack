@@ -315,10 +315,13 @@ async def send_commands(robot):
             left, right = head_towards_leader(robot, active_robots[leaderRobot], left, right)
           else:
             if (goToFriend[1] in robot.tasks.keys()): #If Robot can see task, go towards it
+              message["set_leds_colour"] = "purple"
               left, right = head_towards_goal(robot, left, right, active_robots[goToFriend[0]].task_id)
             elif (str(goToFriend[0]) in robot.neighbours.keys()): #If Robot can see neighbour, go towards it
+              message["set_leds_colour"] = "yellow"
               left, right = head_towards_leader(robot, active_robots[goToFriend[0]], left, right)
             else:
+              message["set_leds_colour"] = "cyan"
               left, right = head_towards_goal(robot, left, right)
               if (left != 0 and right != 0):
                 left, right = object_avoidance(robot, left, right)
@@ -332,10 +335,10 @@ async def send_commands(robot):
         message["set_motor_speeds"]["right"] = right
 
         # Set Pi-puck RGB LEDs based on battery voltage
-        if robot.battery_voltage < robot.BAT_LOW_VOLTAGE:
-            message["set_leds_colour"] = "red"
-        else:
-            message["set_leds_colour"] = "green"
+        # if robot.battery_voltage < robot.BAT_LOW_VOLTAGE:
+        #     message["set_leds_colour"] = "red"
+        # else:
+        #     message["set_leds_colour"] = "green"
 
         # Send command message
         # print("Sending command message to", robot)
@@ -367,10 +370,9 @@ def head_towards_leader(robot, control_robot, left, right):
   else:
     desired_bearing = robot.neighbours[str(control_robot.id)]["bearing"]
     new_heading = desired_bearing
+    print(desired_bearing)
 
   coeff = abs(new_heading/180)
-
-  print(desired_bearing)
   print(robot.orientation)
   print(new_heading)
 
