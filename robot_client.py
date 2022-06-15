@@ -348,11 +348,14 @@ async def send_commands(robot):
 
 def getSmallestAngle(desired, actual):
   diff = desired - actual
-  other = (360 - abs(diff))*(-(diff/abs(diff)))
-  if abs(other) < abs(diff):
-    return other
+  if (abs(diff) > 180):
+    if diff < 0:
+      heading = 360 - abs(diff)
+    else:
+      heading = -(360 - abs(diff))
   else:
-    return diff
+    heading = diff
+  return heading
 
 
 def steer():
@@ -361,8 +364,7 @@ def steer():
 
 def head_towards_leader(robot, control_robot, left, right):
   if (robot.neighbours[str(control_robot.id)]["range"] < 0.10):
-    desired_bearing = control_robot.orientation - robot.orientation
-    new_heading = getSmallestAngle(desired_bearing, robot.orientation)
+    new_heading = getSmallestAngle(control_robot.orientation, robot.orientation)
   else:
     desired_bearing = robot.neighbours[str(control_robot.id)]["bearing"]
     new_heading = desired_bearing
