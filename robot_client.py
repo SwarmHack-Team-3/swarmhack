@@ -309,15 +309,19 @@ async def send_commands(robot):
 
           # Autonomous mode
           for key, activeRobot in active_robots.items():
+            # Identify an active tele-operated robot
             if (activeRobot.teleop and str(key) in robot.neighbours.keys()):
               leaderRobot = activeRobot.id
+            # Identify a neighbour robot within a task
             if (activeRobot.in_task and str(key) in robot.neighbours.keys()):
               goToFriend[0] = activeRobot.id
               goToFriend[1] = activeRobot.task_id
+          # If there is a tele operated robot, follow it
           if (leaderRobot != -1):
-            message["set_leds_colour"] = "yellow"
+            message["set_leds_colour"] = "magenta"
             left, right = head_towards_leader(robot, active_robots[leaderRobot], left, right)
           else:
+            # If a robot can see a neighbours task, go to it
             if (goToFriend[1] in robot.tasks.keys()): #If Robot can see task, go towards it
               message["set_leds_colour"] = "purple"
               left, right = head_towards_goal(robot, left, right, active_robots[goToFriend[0]].task_id)
@@ -328,10 +332,8 @@ async def send_commands(robot):
               message["set_leds_colour"] = "cyan"
               left, right = head_towards_goal(robot, left, right)
               if (left != 0 and right != 0):
+                # If the robot is intending to move, run object avoidance
                 left, right = object_avoidance(robot, left, right)
-            # left, right = default_behaviour(robot)
-            # left, right = aggregate(robot)
-
 
 
         message["set_motor_speeds"] = {}
