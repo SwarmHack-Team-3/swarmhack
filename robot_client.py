@@ -320,16 +320,13 @@ async def send_commands(robot):
           else:
             # If a robot can see a neighbours task, go to it
             if (goToFriend[1] in robot.tasks.keys()): #If Robot can see task, go towards it
-              message["set_leds_colour"] = "yellow"
+              message["set_leds_colour"] = "purple"
               left, right = head_towards_goal(robot, left, right, active_robots[goToFriend[0]].task_id)
-            # If a robot can see a neighbour in a task they cannot see, go to it
-            elif (str(goToFriend[0]) in robot.neighbours.keys()):
-              message["set_leds_colour"] = "cyan"
+            elif (str(goToFriend[0]) in robot.neighbours.keys()): #If Robot can see neighbour, go towards it
+              message["set_leds_colour"] = "yellow"
               left, right = head_towards_leader(robot, active_robots[goToFriend[0]], left, right)
             else:
-              # Otherwise if they have no neighbours in goals, head towards their own goal
-              # If there are no goals, this will result in random sweeping movement
-              message["set_leds_colour"] = "black"
+              message["set_leds_colour"] = "cyan"
               left, right = head_towards_goal(robot, left, right)
               if (left != 0 and right != 0):
                 # If the robot is intending to move, run object avoidance
@@ -341,10 +338,10 @@ async def send_commands(robot):
         message["set_motor_speeds"]["right"] = right
 
         # Set Pi-puck RGB LEDs based on battery voltage
-        if robot.battery_voltage < robot.BAT_LOW_VOLTAGE:
-            message["set_leds_colour"] = "red"
-        else:
-            message["set_leds_colour"] = "green"
+        # if robot.battery_voltage < robot.BAT_LOW_VOLTAGE:
+        #     message["set_leds_colour"] = "red"
+        # else:
+        #     message["set_leds_colour"] = "green"
 
         # Send command message
         # print("Sending command message to", robot)
@@ -376,10 +373,9 @@ def head_towards_leader(robot, control_robot, left, right):
   else:
     desired_bearing = robot.neighbours[str(control_robot.id)]["bearing"]
     new_heading = desired_bearing
+    print(desired_bearing)
 
   coeff = abs(new_heading/180)
-
-  print(desired_bearing)
   print(robot.orientation)
   print(new_heading)
 
