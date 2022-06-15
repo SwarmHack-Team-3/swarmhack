@@ -118,8 +118,7 @@ async def connect_to_robots():
     for id in active_robots.keys():
         ip = robots[id]
         if ip != '':
-            if len(sys.argv) > 1 and sys.argv[1] == "--simulator":
-                uri = f"ws://{sys.argv[2]}:{sys.argv[3]}"
+            uri = f"ws://{server_address}:{server_port}"
             connection = await websockets.connect(uri, ping_interval=None)
 
             print("Opening connection to robot:", uri)
