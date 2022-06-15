@@ -44,7 +44,7 @@ def kill_now() -> bool:
     global __kill_now
     return __kill_now
 
-if sys.argv[1] == "--simulator":
+if len(sys.argv) > 1 and sys.argv[1] == "--simulator":
     server_address = sys.argv[2]
     server_port = sys.argv[3]
     robot_port = sys.argv[3]
@@ -118,7 +118,7 @@ async def connect_to_robots():
     for id in active_robots.keys():
         ip = robots[id]
         if ip != '':
-            if sys.argv[1] == "--simulator":
+            if len(sys.argv) > 1 and sys.argv[1] == "--simulator":
                 uri = f"ws://{sys.argv[2]}:{sys.argv[3]}"
             connection = await websockets.connect(uri, ping_interval=None)
 
@@ -129,7 +129,7 @@ async def connect_to_robots():
             if awake:
                 print(f"Robot {id} is awake")
 
-                if sys.argv[1] == "--simulator":
+                if len(sys.argv) > 1 and sys.argv[1] == "--simulator":
                     await request_robot(connection, id)
 
                 active_robots[id].connection = connection
@@ -603,7 +603,7 @@ if __name__ == "__main__":
 
     # Specify robots to work with
     # robot_ids = range(2, 3)
-    robot_ids = [2, 5]
+    robot_ids = range(1,6)
 
     for robot_id in robot_ids:
         if robots[robot_id] != '':
