@@ -335,8 +335,12 @@ def steer():
 
 
 def head_towards_leader(robot, control_robot, left, right):
-  desired_bearing = robot.neighbours[str(control_robot.id)]["bearing"]
-  new_heading = desired_bearing #getSmallestAngle(desired_bearing, robot.orientation)
+  if (robot.neighbours[str(control_robot.id)]["range"] < 0.10):
+    desired_bearing = control_robot.orientation - robot.orientation
+    new_heading = getSmallestAngle(desired_bearing, robot.orientation)
+  else:
+    desired_bearing = robot.neighbours[str(control_robot.id)]["bearing"]
+    new_heading = desired_bearing
 
   coeff = abs(new_heading/180)
 
@@ -351,11 +355,6 @@ def head_towards_leader(robot, control_robot, left, right):
     #left = new_heading / robot.MAX_SPEED
     left = robot.MAX_SPEED * (1-coeff)
     right = robot.MAX_SPEED
-  else:
-    if (robot.neighbours[str(control_robot.id)]["neighbours"] < 0.10):
-      pass
-    else:
-      left = right = robot.MAX_SPEED
 
   return left, right
 
@@ -578,8 +577,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Specify robots to work with
-    robot_ids = range(1, 6)
-    # robot_ids = [1]
+    # robot_ids = range(2, 3)
+    robot_ids = [2, 5]
 
     for robot_id in robot_ids:
         if robots[robot_id] != '':
