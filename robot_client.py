@@ -244,7 +244,7 @@ async def stop_robot(robot):
 
 
 async def get_data(robot):
-    # try:
+    try:
         message = {"get_ir": True}
 
         # Send request for data and wait for reply
@@ -263,8 +263,8 @@ async def get_data(robot):
         #                                                  robot.battery_voltage,
         #                                                  robot.battery_percentage))
 
-    # except Exception as e:
-    #     print(f"get_ir {type(e).__name__}: {e}")
+    except Exception as e:
+        print(f"get_ir {type(e).__name__}: {e}")
 
 
 async def send_commands(robot):
@@ -280,7 +280,7 @@ async def send_commands(robot):
         message = {}
 
         if robot.teleop:
-            message["set_leds_colour"] = "blue"
+            message["set_leds_colour"] = "red"
             if robot.state == RobotState.FORWARDS:
                 left = right = robot.MAX_SPEED
             elif robot.state == RobotState.BACKWARDS:
@@ -323,13 +323,13 @@ async def send_commands(robot):
           else:
             # If a robot can see a neighbours task, go to it
             if (goToFriend[1] in robot.tasks.keys()): #If Robot can see task, go towards it
-              message["set_leds_colour"] = "purple"
+              message["set_leds_colour"] = "yellow"
               left, right = head_towards_goal(robot, left, right, active_robots[goToFriend[0]].task_id)
             elif (str(goToFriend[0]) in robot.neighbours.keys()): #If Robot can see neighbour, go towards it
-              message["set_leds_colour"] = "yellow"
+              message["set_leds_colour"] = "green"
               left, right = head_towards_leader(robot, active_robots[goToFriend[0]], left, right)
             else:
-              message["set_leds_colour"] = "cyan"
+              message["set_leds_colour"] = "white"
               left, right = head_towards_goal(robot, left, right)
               if (left != 0 and right != 0):
                 # If the robot is intending to move, run object avoidance
@@ -350,7 +350,7 @@ async def send_commands(robot):
         # print("Sending command message to", robot)
         await robot.connection.send(json.dumps(message))
 
-    except ValueError as e:
+    except Exception as e:
         print(f"send_commands {type(e).__name__}: {e}")
 
 
