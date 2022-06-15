@@ -245,7 +245,7 @@ async def stop_robot(robot):
 
 async def get_data(robot):
     # try:
-        message = {"get_ir": True, "get_battery": True}
+        message = {"get_ir": True}
 
         # Send request for data and wait for reply
         await robot.connection.send(json.dumps(message))
@@ -629,8 +629,8 @@ if __name__ == "__main__":
 
     # Listen for keyboard input from teleop websocket client
     print(Fore.GREEN + "[INFO]: Starting teleop server")
-    # start_server = websockets.serve(ws_handler=handler, host=None, port=7000, ping_interval=None, ping_timeout=None)
-    # loop.run_until_complete(start_server)
+    start_server = websockets.serve(ws_handler=handler, host=None, port=7000, ping_interval=None, ping_timeout=None)
+    loop.run_until_complete(start_server)
 
     # Only communicate with robots that were successfully connected to
     while True:

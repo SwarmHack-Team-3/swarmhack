@@ -134,4 +134,4 @@ if __name__ == "__main__":
                                   on_error=on_error,
                                   on_close=on_close)
     webs.on_open = on_open
-    webs.run_forever()
+    webs.run_forever(ping_interval=None)
