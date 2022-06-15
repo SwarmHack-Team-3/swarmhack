@@ -393,18 +393,28 @@ def head_towards_leader(robot, control_robot, left, right):
   return left, right
 
 def object_avoidance(robot, left, right):
-  if robot.ir_readings == {}:
-    return left, right
-  elif robot.ir_readings[1] > robot.ir_threshold and robot.ir_readings[6] > robot.ir_threshold and robot.ir_readings[3] > robot.ir_threshold and robot.ir_readings[4] > robot.ir_threshold:
-    #Robot is trapped. Need to program behaviour for this
-    pass
-  elif robot.ir_readings[0] > robot.ir_threshold or robot.ir_readings[1] > robot.ir_threshold:
-    left = -robot.MAX_SPEED/2
-    right = robot.MAX_SPEED/2
-  elif robot.ir_readings[6] > robot.ir_threshold or robot.ir_readings[7] > robot.ir_threshold:
-    left = robot.MAX_SPEED/2
-    right = -robot.MAX_SPEED/2
-  #If there is no objects to collide into, the initial decision for left and right is adhered to
+  try:
+    if robot.ir_readings == {}:
+      return left, right
+    elif robot.ir_readings[1] > robot.ir_threshold and robot.ir_readings[6] > robot.ir_threshold and robot.ir_readings[3] > robot.ir_threshold and robot.ir_readings[4] > robot.ir_threshold:
+      #Robot is trapped. Need to program behaviour for this
+      pass
+    elif robot.ir_readings[0] > robot.ir_threshold or robot.ir_readings[1] > robot.ir_threshold:
+      left = -robot.MAX_SPEED/2
+      right = robot.MAX_SPEED/2
+    elif robot.ir_readings[6] > robot.ir_threshold or robot.ir_readings[7] > robot.ir_threshold:
+      left = robot.MAX_SPEED/2
+      right = -robot.MAX_SPEED/2
+    #If there is no objects to collide into, the initial decision for left and right is adhered to
+  except Exception: # Mona
+    if robot.ir_readings == {}:
+      return left, right
+    elif robot.ir_readings[0] > robot.ir_threshold or robot.ir_readings[1] > robot.ir_threshold:
+      left = -robot.MAX_SPEED/2
+      right = robot.MAX_SPEED/2
+    elif robot.ir_readings[3] > robot.ir_threshold or robot.ir_readings[4] > robot.ir_threshold:
+      left = robot.MAX_SPEED/2
+      right = -robot.MAX_SPEED/2
   return left, right
 
 
@@ -612,7 +622,7 @@ if __name__ == "__main__":
 
     # Specify robots to work with
     # robot_ids = [1, 2]
-    robot_ids = range(1,6)
+    robot_ids = range(31,41)
 
     for robot_id in robot_ids:
         if robots[robot_id] != '':
