@@ -384,10 +384,10 @@ def head_towards_leader(robot, control_robot, left, right):
 
   if (new_heading > 20):
     left = robot.MAX_SPEED
-    right = robot.MAX_SPEED * (1-coeff)
+    right = robot.MAX_SPEED * (1-(1.5*coeff))
   elif (new_heading < -20):
     #left = new_heading / robot.MAX_SPEED
-    left = robot.MAX_SPEED * (1-coeff)
+    left = robot.MAX_SPEED * (1-(1.5*coeff))
     right = robot.MAX_SPEED
 
   return left, right
@@ -611,7 +611,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Specify robots to work with
-    # robot_ids = range(2, 3)
+    # robot_ids = [1, 2]
     robot_ids = range(1,6)
 
     for robot_id in robot_ids:
