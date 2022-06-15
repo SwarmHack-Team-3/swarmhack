@@ -118,7 +118,10 @@ async def connect_to_robots():
     for id in active_robots.keys():
         ip = robots[id]
         if ip != '':
-            uri = f"ws://{server_address}:{server_port}"
+            if len(sys.argv) > 1 and sys.argv[1] == "--simulator":
+              uri = f"ws://{server_address}:{server_port}"
+            else:
+              uri = f"ws://{ip}:{robot_port}"
             connection = await websockets.connect(uri, ping_interval=None)
 
             print("Opening connection to robot:", uri)
@@ -312,6 +315,7 @@ async def send_commands(robot):
               goToFriend[0] = activeRobot.id
               goToFriend[1] = activeRobot.task_id
           if (leaderRobot != -1):
+            message["set_leds_colour"] = "yellow"
             left, right = head_towards_leader(robot, active_robots[leaderRobot], left, right)
           else:
             if (goToFriend[1] in robot.tasks.keys()): #If Robot can see task, go towards it
